@@ -39,41 +39,22 @@
       to { transform: translateY(0); opacity: 1; }
     }
 
-    /* Map Enhancement Styles */
-    .map-overlay-card {
-      position: absolute;
-      top: 15px;
-      left: 15px;
-      z-index: 1000;
-      background: rgba(255, 255, 255, 0.9);
-      backdrop-filter: blur(8px);
-      padding: 12px 18px;
-      border-radius: 16px;
-      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
-      border: 1px solid rgba(255,255,255,0.3);
-      pointer-events: none;
+    /* Added Animations for Tracking */
+    @keyframes success-pulse {
+      0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); transform: scale(1); }
+      50% { box-shadow: 0 0 0 20px rgba(34, 197, 94, 0); transform: scale(1.02); }
+      100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); transform: scale(1); }
     }
-    .recenter-btn {
-      position: absolute;
-      bottom: 20px;
-      right: 20px;
-      z-index: 1000;
-      background: white;
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      cursor: pointer;
-      color: #4D148C;
-      transition: all 0.2s;
+    @keyframes error-shake {
+      0%, 100% { transform: translateX(0); border-color: transparent; }
+      20%, 60% { transform: translateX(-10px); border-color: #ef4444; }
+      40%, 80% { transform: translateX(10px); border-color: #ef4444; }
     }
-    .recenter-btn:hover { background: #f4f4f4; transform: scale(1.05); }
-    .vehicle-icon-wrapper {
-      transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-      filter: drop-shadow(0 4px 5px rgba(0,0,0,0.3));
+    .track-success { animation: success-pulse 0.6s ease-out; }
+    .track-error { animation: error-shake 0.4s ease-in-out; }
+    
+    .package-marker-container {
+      transition: transform 0.5s linear;
     }
   </style>
 </head>
@@ -119,7 +100,7 @@
       <p class="text-lg md:text-2xl mb-12 max-w-lg mx-auto opacity-90">Enter your tracking number below</p>
       
       <div class="max-w-xl mx-auto px-2 md:px-0">
-        <div class="flex flex-col md:flex-row shadow-2xl rounded-3xl overflow-hidden bg-white/10 p-2 md:p-0">
+        <div id="trackInputWrapper" class="flex flex-col md:flex-row shadow-2xl rounded-3xl overflow-hidden bg-white/10 p-2 md:p-0 border-2 border-transparent transition-all">
           <input id="trackingInput" type="text" placeholder="ESP1234567890" 
                  class="flex-1 bg-white text-zinc-900 px-6 py-4 md:py-6 text-lg md:text-xl focus:outline-none rounded-2xl md:rounded-none">
           <button onclick="trackShipment()" id="trackBtn"
@@ -150,18 +131,6 @@
       </div>
       <div class="lg:col-span-7">
         <div class="relative bg-white rounded-3xl overflow-hidden shadow-2xl h-[300px] md:h-[520px]">
-          <div id="mapHUD" class="map-overlay-card hidden">
-            <p class="text-[10px] font-black uppercase text-zinc-400 tracking-wider mb-1">Estimated Arrival</p>
-            <h4 id="hudETA" class="text-xl font-bold text-[#4D148C]">Calculating...</h4>
-            <div class="mt-2 flex items-center gap-3">
-              <span id="hudStatus" class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">In Transit</span>
-              <span id="hudDistance" class="text-[10px] text-zinc-500 font-medium">Tracking Live</span>
-            </div>
-          </div>
-          <div onclick="recenterOnDriver()" class="recenter-btn">
-            <i class="fas fa-location-crosshairs"></i>
-          </div>
-
           <div id="map" class="w-full h-full"></div>
           <div class="absolute top-4 right-4 z-[400] bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg border border-zinc-200">
              <p class="text-[10px] font-bold text-zinc-600 flex items-center gap-2 italic">
@@ -302,8 +271,12 @@
     
     let currentTracking = '';
     let mapInstance = null;
-    let driverMarker = null;
     let currentFee = 500;
+    
+    // Tracking Animation and Logic State
+    let movingMarker = null;
+    let progressLine = null;
+    let animationInterval = null;
 
     const deliveryNames = ["James Thompson", "Sarah Miller", "Robert Garcia", "Michael Davis", "Linda Martinez", "William Wilson", "Elizabeth Taylor", "David Anderson", "Barbara Thomas", "Richard Jackson"];
     const deliveryComments = ["Fast delivery very happy", "Package arrived safely no issues", "Secure shipping and great service", "Excellent logistics company thanks", "Very professional and fast", "My parcel arrived in perfect condition", "Safe and reliable service", "Tracking was accurate and timely", "Highly recommend for secure items", "Five star service very secure"];
@@ -324,27 +297,43 @@
     async function trackShipment() {
       const input = document.getElementById('trackingInput').value.trim().toUpperCase();
       const btn = document.getElementById('trackBtn');
+      const wrapper = document.getElementById('trackInputWrapper');
+      
       if (!input) return alert('Please enter tracking number');
+      
       btn.disabled = true;
       btn.innerHTML = '<i class="fas fa-spinner animate-spin"></i>';
+      wrapper.classList.remove('track-success', 'track-error');
+
       try {
         const { data, error } = await supabaseClient
           .from('parcels')
           .select('*')
           .eq('tracking_number', input)
           .single();
+        
         if (error || !data) {
+          wrapper.classList.add('track-error');
+          setTimeout(() => wrapper.classList.remove('track-error'), 500);
           alert('📦 Tracking number not found.');
           return;
         }
+
+        // Success Animation
+        wrapper.classList.add('track-success');
+        
         currentTracking = input;
         currentFee = data.fee || 500;
         const formattedFee = '$' + Number(currentFee).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
         document.getElementById('modalFeeDisplay').innerText = formattedFee;
         document.getElementById('amount').value = formattedFee;
-        document.getElementById('resultsSection').classList.remove('hidden');
-        renderResults(data);
-        document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+        
+        setTimeout(() => {
+            document.getElementById('resultsSection').classList.remove('hidden');
+            renderResults(data);
+            document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+        }, 600);
+
       } catch (e) {
         alert('Connection error. Try again.');
       } finally {
@@ -354,20 +343,9 @@
     }
 
     function renderResults(parcel) {
-      // Image Fix: Logic to handle null/missing images with a high-quality placeholder
-      const placeholderImg = 'https://images.unsplash.com/photo-1580674285054-bed31e145f59?q=80&w=400&h=400&auto=format&fit=crop';
-      const imgUrl = parcel.package_image_url || placeholderImg;
-
       document.getElementById('packageCard').innerHTML = `
         <div class="flex flex-col md:flex-row gap-6">
-          <div class="relative shrink-0 mx-auto md:mx-0">
-             <img src="${imgUrl}" 
-                  onerror="this.src='${placeholderImg}'"
-                  class="w-40 h-40 md:w-32 md:h-32 object-cover rounded-2xl shadow-xl border-2 border-white">
-             <div class="absolute -bottom-2 -right-2 bg-[#4D148C] text-white w-8 h-8 rounded-full flex items-center justify-center border-2 border-white">
-                <i class="fas fa-box text-xs"></i>
-             </div>
-          </div>
+          <img src="${parcel.package_image_url || 'https://picsum.photos/id/1015/300/300'}" class="w-full md:w-32 h-32 object-cover rounded-2xl shadow-lg">
           <div class="flex-1">
             <div class="flex justify-between items-start">
               <div>
@@ -386,12 +364,10 @@
         </div>
       `;
       const steps = [
-        { n: 'Order Placed', i: 'fa-file-invoice' },
-        { n: 'Preparing', i: 'fa-box-open' },
-        { n: 'Picked up', i: 'fa-box' },
+        { n: 'Pick up at origin', i: 'fa-box' },
         { n: 'Departed Hub', i: 'fa-truck' },
-        { n: 'En Route', i: 'fa-road' },
-        { n: 'In Destination Hub', i: 'fa-plane-arrival' },
+        { n: 'In Transit', i: 'fa-road' },
+        { n: 'Arrived at Destination Hub', i: 'fa-plane-arrival' },
         { n: 'Delivered', i: 'fa-check-circle' }
       ];
       const pIndex = getProgressIndex(parcel.status);
@@ -408,7 +384,7 @@
               ${idx === pIndex && parcel.status === 'On Hold' ? '<span class="text-red-600 text-[10px] font-black uppercase tracking-tighter">STOPPED: ON HOLD</span>' : ''}
             </div>
           </div>
-          ${idx < steps.length - 1 ? `<div class="ml-4 md:ml-5 h-6 md:h-8 w-0.5 ${idx < pIndex ? 'bg-[#4D148C]' : 'bg-zinc-200'}"></div>` : ''}
+          ${idx < 4 ? `<div class="ml-4 md:ml-5 h-6 md:h-8 w-0.5 ${idx < pIndex ? 'bg-[#4D148C]' : 'bg-zinc-200'}"></div>` : ''}
         `;
       });
       document.getElementById('progressSteps').innerHTML = pHTML;
@@ -420,115 +396,107 @@
     }
 
     function getProgressIndex(s) {
-      if (s === 'Delivered') return 6;
-      if (s.includes('Arrived') || s.includes('Destination Hub')) return 5;
-      if (s === 'In Transit' || s === 'On Hold' || s === 'En Route') return 4;
-      if (s.includes('Departed')) return 3;
-      if (s.includes('Picked')) return 2;
-      return 1;
+      if (s === 'Delivered') return 4;
+      if (s.includes('Arrived')) return 3;
+      if (s === 'In Transit' || s === 'On Hold') return 2;
+      if (s.includes('Departed')) return 1;
+      return 0;
     }
 
     function initMap(p) {
-      if (mapInstance) mapInstance.remove();
+      if (mapInstance) {
+        mapInstance.remove();
+        clearInterval(animationInterval);
+      }
       
-      // Modern Map Instance
-      mapInstance = L.map('map', { zoomControl: false }).setView([p.current_lat || 0, p.current_lng || 0], 12);
+      mapInstance = L.map('map', { zoomControl: false }).setView([p.current_lat || 0, p.current_lng || 0], 4);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapInstance);
       
-      // CartoDB Voyager Tiles (Modern & Clean)
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(mapInstance);
-
-      // Route Geometry
-      const routePoints = [[p.current_lat, p.current_lng], [p.dest_lat, p.dest_lng]];
-      const routeLine = L.polyline(routePoints, {
-        color: p.status === 'On Hold' ? '#ef4444' : '#3388ff',
-        weight: 7,
-        opacity: 0.85,
-        lineCap: 'round'
+      const startPoint = [p.current_lat, p.current_lng];
+      const endPoint = [p.dest_lat, p.dest_lng];
+      const isOnHold = p.status === 'On Hold';
+      
+      // Full route line - Solid Green or Red
+      const fullRouteColor = isOnHold ? '#ef4444' : '#22c55e';
+      const fullRoute = L.polyline([startPoint, endPoint], {
+          color: fullRouteColor, 
+          weight: 6,
+          opacity: 0.8
       }).addTo(mapInstance);
 
-      // Breadcrumb Progress Trail
-      L.polyline(routePoints, {
-        color: '#ffffff',
-        weight: 2,
-        dashArray: '5, 10',
-        opacity: 0.6
+      // Markers for Origin and Destination
+      L.marker(startPoint).addTo(mapInstance).bindPopup("Origin");
+      L.marker(endPoint).addTo(mapInstance).bindPopup("Destination");
+
+      // Custom Moving Package Marker
+      const packageIcon = L.divIcon({
+          html: `<div class="package-marker-container" style="width: 45px; height: 45px; background: white; padding: 3px; border-radius: 10px; border: 2px solid #4D148C; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                  <img src="${p.package_image_url || 'https://i.imgur.com/tw6q8yh.png'}" style="width:100%; height:100%; object-fit:cover;">
+                 </div>`,
+          className: '',
+          iconSize: [45, 45],
+          iconAnchor: [22, 22]
+      });
+
+      movingMarker = L.marker(startPoint, {icon: packageIcon}).addTo(mapInstance);
+      
+      // Breadcrumb/Progress Line
+      progressLine = L.polyline([startPoint, startPoint], {
+          color: '#6b7280',
+          weight: 2,
+          dashArray: '5, 5',
+          opacity: 0.6
       }).addTo(mapInstance);
 
-      // Static Points
-      const dotIcon = (color) => L.divIcon({
-        html: `<div class="w-4 h-4 rounded-full border-4 border-white shadow-md bg-${color}-600"></div>`,
-        className: '', iconSize: [16, 16]
-      });
+      mapInstance.fitBounds(fullRoute.getBounds(), { padding: [50, 50] });
 
-      L.marker([p.current_lat, p.current_lng], {icon: dotIcon('indigo')}).addTo(mapInstance);
-      L.marker([p.dest_lat, p.dest_lng], {icon: dotIcon('red')}).addTo(mapInstance);
+      // Persistence and Movement Logic (4-hour timer)
+      if (!isOnHold) {
+          handleMovement(p, startPoint, endPoint);
+      }
+    }
 
-      // Driver Marker
-      const driverIcon = L.divIcon({
-        html: `<div class="vehicle-icon-wrapper"><i class="fas fa-truck-fast text-3xl text-[#4D148C]"></i></div>`,
-        className: '', iconSize: [36, 36], iconAnchor: [18, 18]
-      });
-
-      driverMarker = L.marker([p.current_lat, p.current_lng], { icon: driverIcon }).addTo(mapInstance);
-      
-      // Calculate Advanced ETA
-      let etaDisplay = "Calculating...";
-      const R = 3958.8; // Earth radius in miles
-      const dLat = (p.dest_lat - p.current_lat) * Math.PI / 180;
-      const dLon = (p.dest_lng - p.current_lng) * Math.PI / 180;
-      const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(p.current_lat * Math.PI / 180) * Math.cos(p.dest_lat * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      const distance = R * c;
-
-      if (p.status === 'On Hold') {
-        etaDisplay = "ON HOLD";
-        document.getElementById('hudETA').className = "text-xl font-bold text-red-600";
-      } else {
-        document.getElementById('hudETA').className = "text-xl font-bold text-[#4D148C]";
-        const isNear = distance < 50; 
-        const speed = isNear ? 40 : 500; // 40mph for truck, 500mph for plane
-        const hours = distance / speed;
-        if (hours < 1) {
-          etaDisplay = Math.round(hours * 60) + " mins";
-        } else {
-          etaDisplay = Math.round(hours) + " hours";
+    function handleMovement(parcel, start, end) {
+        const storageKey = `startTime_${parcel.tracking_number}`;
+        let startTime = localStorage.getItem(storageKey);
+        
+        if (!startTime) {
+            startTime = Date.now();
+            localStorage.setItem(storageKey, startTime);
         }
-      }
 
-      // Show Map Info Panel (HUD)
-      document.getElementById('mapHUD').classList.remove('hidden');
-      document.getElementById('hudETA').innerText = etaDisplay;
-      document.getElementById('hudStatus').innerText = p.status;
-      document.getElementById('hudDistance').innerText = `Approx. ${distance.toFixed(1)} mi left`;
-
-      mapInstance.fitBounds(routeLine.getBounds(), { padding: [50, 50] });
-
-      // Start Simulation
-      simulateLiveMovement(p);
-    }
-
-    function simulateLiveMovement(p) {
-      let progress = 0;
-      const moveInterval = setInterval(() => {
-        progress += 0.0005;
-        if (progress >= 0.8) clearInterval(moveInterval); // Stop at 80% for realism
-
-        const currentLat = p.current_lat + (p.dest_lat - p.current_lat) * progress;
-        const currentLng = p.current_lng + (p.dest_lng - p.current_lng) * progress;
+        const duration = 4 * 60 * 60 * 1000; // 4 hours in ms
         
-        driverMarker.setLatLng([currentLat, currentLng]);
-        
-        // Rotation toward destination
-        const bearing = Math.atan2(p.dest_lng - p.current_lng, p.dest_lat - p.current_lat) * 180 / Math.PI;
-        const iconEl = document.querySelector('.vehicle-icon-wrapper');
-        if (iconEl) iconEl.style.transform = `rotate(${bearing}deg)`;
-      }, 1500);
-    }
+        const updatePosition = () => {
+            const now = Date.now();
+            const elapsed = now - parseInt(startTime);
+            let progress = Math.min(elapsed / duration, 1);
 
-    function recenterOnDriver() {
-      if (driverMarker) {
-        mapInstance.flyTo(driverMarker.getLatLng(), 15, { duration: 1.5 });
-      }
+            // Calculate current position
+            const currentLat = start[0] + (end[0] - start[0]) * progress;
+            const currentLng = start[1] + (end[1] - start[1]) * progress;
+            const newPos = [currentLat, currentLng];
+
+            // Calculate rotation angle
+            const angle = Math.atan2(end[0] - start[0], end[1] - start[1]) * (180 / Math.PI);
+            
+            // Update Marker and Progress Line
+            movingMarker.setLatLng(newPos);
+            progressLine.setLatLngs([start, newPos]);
+            
+            const markerDiv = movingMarker.getElement().querySelector('.package-marker-container');
+            if(markerDiv) markerDiv.style.transform = `rotate(${angle-90}deg)`;
+
+            // Check if 4 hours passed or reached destination
+            if (progress >= 1) {
+                clearInterval(animationInterval);
+                localStorage.setItem(`status_${parcel.tracking_number}`, 'On Hold');
+                location.reload(); // Refresh to show On Hold state
+            }
+        };
+
+        updatePosition();
+        animationInterval = setInterval(updatePosition, 7000); // Move every 7 seconds
     }
 
     function hideResults() { document.getElementById('resultsSection').classList.add('hidden'); window.scrollTo(0,0); }
