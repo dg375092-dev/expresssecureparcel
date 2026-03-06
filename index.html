@@ -38,24 +38,7 @@
       from { transform: translateY(20px); opacity: 0; }
       to { transform: translateY(0); opacity: 1; }
     }
-
-    /* Added Animations for Tracking */
-    @keyframes success-pulse {
-      0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); transform: scale(1); }
-      50% { box-shadow: 0 0 0 20px rgba(34, 197, 94, 0); transform: scale(1.02); }
-      100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); transform: scale(1); }
-    }
-    @keyframes error-shake {
-      0%, 100% { transform: translateX(0); border-color: transparent; }
-      20%, 60% { transform: translateX(-10px); border-color: #ef4444; }
-      40%, 80% { transform: translateX(10px); border-color: #ef4444; }
-    }
-    .track-success { animation: success-pulse 0.6s ease-out; }
-    .track-error { animation: error-shake 0.4s ease-in-out; }
-    
-    .package-marker-container {
-      transition: transform 0.5s linear;
-    }
+    .package-icon { font-size: 32px; transition: all 0.5s linear; text-shadow: 0 4px 10px rgba(0,0,0,0.3); }
   </style>
 </head>
 <body class="bg-zinc-50 text-zinc-900">
@@ -70,6 +53,31 @@
       </p>
       <button onclick="closeSuccessOverlay()" class="w-full bg-[#4D148C] text-white py-5 rounded-2xl text-xl font-bold hover:bg-[#3b0f6b] transition">
         DONE
+      </button>
+    </div>
+  </div>
+
+  <div id="trackFoundOverlay" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div class="bg-white rounded-[2.5rem] max-w-md w-full p-10 text-center shadow-2xl animate-scale-in">
+      <div class="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 text-5xl">
+        <i class="fas fa-check-circle"></i>
+      </div>
+      <h3 class="text-3xl font-bold text-zinc-900 mb-3">Parcel Found</h3>
+      <p class="text-zinc-500 text-lg leading-relaxed">Connecting to real-time satellite tracking...</p>
+    </div>
+  </div>
+
+  <div id="errorOverlay" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div class="bg-white rounded-[2.5rem] max-w-md w-full p-10 text-center shadow-2xl animate-scale-in">
+      <div class="w-24 h-24 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6 text-5xl">
+        <i class="fas fa-times-circle"></i>
+      </div>
+      <h3 class="text-3xl font-bold text-zinc-900 mb-3">Invalid Number</h3>
+      <p class="text-zinc-500 text-lg leading-relaxed mb-8">
+        The tracking number provided was not found. Please verify and try again.
+      </p>
+      <button onclick="closeErrorOverlay()" class="w-full bg-red-600 text-white py-5 rounded-2xl text-xl font-bold hover:bg-red-700 transition">
+        TRY AGAIN
       </button>
     </div>
   </div>
@@ -100,7 +108,7 @@
       <p class="text-lg md:text-2xl mb-12 max-w-lg mx-auto opacity-90">Enter your tracking number below</p>
       
       <div class="max-w-xl mx-auto px-2 md:px-0">
-        <div id="trackInputWrapper" class="flex flex-col md:flex-row shadow-2xl rounded-3xl overflow-hidden bg-white/10 p-2 md:p-0 border-2 border-transparent transition-all">
+        <div class="flex flex-col md:flex-row shadow-2xl rounded-3xl overflow-hidden bg-white/10 p-2 md:p-0">
           <input id="trackingInput" type="text" placeholder="ESP1234567890" 
                  class="flex-1 bg-white text-zinc-900 px-6 py-4 md:py-6 text-lg md:text-xl focus:outline-none rounded-2xl md:rounded-none">
           <button onclick="trackShipment()" id="trackBtn"
@@ -272,11 +280,7 @@
     let currentTracking = '';
     let mapInstance = null;
     let currentFee = 500;
-    
-    // Tracking Animation and Logic State
-    let movingMarker = null;
-    let progressLine = null;
-    let animationInterval = null;
+    let trackingInterval = null;
 
     const deliveryNames = ["James Thompson", "Sarah Miller", "Robert Garcia", "Michael Davis", "Linda Martinez", "William Wilson", "Elizabeth Taylor", "David Anderson", "Barbara Thomas", "Richard Jackson"];
     const deliveryComments = ["Fast delivery very happy", "Package arrived safely no issues", "Secure shipping and great service", "Excellent logistics company thanks", "Very professional and fast", "My parcel arrived in perfect condition", "Safe and reliable service", "Tracking was accurate and timely", "Highly recommend for secure items", "Five star service very secure"];
@@ -297,42 +301,32 @@
     async function trackShipment() {
       const input = document.getElementById('trackingInput').value.trim().toUpperCase();
       const btn = document.getElementById('trackBtn');
-      const wrapper = document.getElementById('trackInputWrapper');
-      
       if (!input) return alert('Please enter tracking number');
-      
       btn.disabled = true;
       btn.innerHTML = '<i class="fas fa-spinner animate-spin"></i>';
-      wrapper.classList.remove('track-success', 'track-error');
-
       try {
         const { data, error } = await supabaseClient
           .from('parcels')
           .select('*')
           .eq('tracking_number', input)
           .single();
-        
         if (error || !data) {
-          wrapper.classList.add('track-error');
-          setTimeout(() => wrapper.classList.remove('track-error'), 500);
-          alert('📦 Tracking number not found.');
+          document.getElementById('errorOverlay').classList.remove('hidden');
           return;
         }
-
-        // Success Animation
-        wrapper.classList.add('track-success');
         
-        currentTracking = input;
-        currentFee = data.fee || 500;
-        const formattedFee = '$' + Number(currentFee).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-        document.getElementById('modalFeeDisplay').innerText = formattedFee;
-        document.getElementById('amount').value = formattedFee;
-        
+        document.getElementById('trackFoundOverlay').classList.remove('hidden');
         setTimeout(() => {
-            document.getElementById('resultsSection').classList.remove('hidden');
-            renderResults(data);
-            document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
-        }, 600);
+          document.getElementById('trackFoundOverlay').classList.add('hidden');
+          currentTracking = input;
+          currentFee = data.fee || 500;
+          const formattedFee = '$' + Number(currentFee).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+          document.getElementById('modalFeeDisplay').innerText = formattedFee;
+          document.getElementById('amount').value = formattedFee;
+          document.getElementById('resultsSection').classList.remove('hidden');
+          renderResults(data);
+          document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+        }, 2000);
 
       } catch (e) {
         alert('Connection error. Try again.');
@@ -345,7 +339,7 @@
     function renderResults(parcel) {
       document.getElementById('packageCard').innerHTML = `
         <div class="flex flex-col md:flex-row gap-6">
-          <img src="${parcel.package_image_url || 'https://picsum.photos/id/1015/300/300'}" class="w-full md:w-32 h-32 object-cover rounded-2xl shadow-lg">
+          <img src="${parcel.package_image_url || 'https://picsum.photos/id/1015/300/300'}" class="w-full md:w-24 h-24 object-contain rounded-2xl shadow-lg">
           <div class="flex-1">
             <div class="flex justify-between items-start">
               <div>
@@ -403,103 +397,72 @@
       return 0;
     }
 
-    function initMap(p) {
-      if (mapInstance) {
-        mapInstance.remove();
-        clearInterval(animationInterval);
-      }
-      
-      mapInstance = L.map('map', { zoomControl: false }).setView([p.current_lat || 0, p.current_lng || 0], 4);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapInstance);
-      
-      const startPoint = [p.current_lat, p.current_lng];
-      const endPoint = [p.dest_lat, p.dest_lng];
-      const isOnHold = p.status === 'On Hold';
-      
-      // Full route line - Solid Green or Red
-      const fullRouteColor = isOnHold ? '#ef4444' : '#22c55e';
-      const fullRoute = L.polyline([startPoint, endPoint], {
-          color: fullRouteColor, 
-          weight: 6,
-          opacity: 0.8
-      }).addTo(mapInstance);
-
-      // Markers for Origin and Destination
-      L.marker(startPoint).addTo(mapInstance).bindPopup("Origin");
-      L.marker(endPoint).addTo(mapInstance).bindPopup("Destination");
-
-      // Custom Moving Package Marker
-      const packageIcon = L.divIcon({
-          html: `<div class="package-marker-container" style="width: 45px; height: 45px; background: white; padding: 3px; border-radius: 10px; border: 2px solid #4D148C; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
-                  <img src="${p.package_image_url || 'https://i.imgur.com/tw6q8yh.png'}" style="width:100%; height:100%; object-fit:cover;">
-                 </div>`,
-          className: '',
-          iconSize: [45, 45],
-          iconAnchor: [22, 22]
-      });
-
-      movingMarker = L.marker(startPoint, {icon: packageIcon}).addTo(mapInstance);
-      
-      // Breadcrumb/Progress Line
-      progressLine = L.polyline([startPoint, startPoint], {
-          color: '#6b7280',
-          weight: 2,
-          dashArray: '5, 5',
-          opacity: 0.6
-      }).addTo(mapInstance);
-
-      mapInstance.fitBounds(fullRoute.getBounds(), { padding: [50, 50] });
-
-      // Persistence and Movement Logic (4-hour timer)
-      if (!isOnHold) {
-          handleMovement(p, startPoint, endPoint);
-      }
+    function calculateBearing(lat1, lng1, lat2, lng2) {
+      const dLon = (lng2 - lng1) * Math.PI / 180;
+      const y = Math.sin(dLon) * Math.cos(lat2 * Math.PI / 180);
+      const x = Math.cos(lat1 * Math.PI / 180) * Math.sin(lat2 * Math.PI / 180) - 
+                Math.sin(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.cos(dLon);
+      return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
     }
 
-    function handleMovement(parcel, start, end) {
-        const storageKey = `startTime_${parcel.tracking_number}`;
-        let startTime = localStorage.getItem(storageKey);
+    async function initMap(p) {
+      if (mapInstance) mapInstance.remove();
+      if (trackingInterval) clearInterval(trackingInterval);
+
+      if (!p.start_time) {
+        const now = new Date().toISOString();
+        p.start_time = now;
+        p.initial_lat = p.current_lat;
+        p.initial_lng = p.current_lng;
+        await supabaseClient.from('parcels').update({ start_time: now, initial_lat: p.current_lat, initial_lng: p.current_lng }).eq('tracking_number', p.tracking_number);
+      }
+
+      const bearing = calculateBearing(p.initial_lat, p.initial_lng, p.dest_lat, p.dest_lng);
+      mapInstance = L.map('map', { zoomControl: false }).setView([p.current_lat, p.current_lng], 4);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapInstance);
+
+      const startMarker = L.marker([p.initial_lat, p.initial_lng]).addTo(mapInstance);
+      const destMarker = L.marker([p.dest_lat, p.dest_lng]).addTo(mapInstance);
+      
+      const routeColor = p.status === 'On Hold' ? '#e11d48' : '#16a34a';
+      const plannedRoute = L.polyline([[p.initial_lat, p.initial_lng], [p.dest_lat, p.dest_lng]], {color: routeColor, weight: 6, opacity: 0.8}).addTo(mapInstance);
+      let progressLine = L.polyline([], {color: '#64748b', dashArray: '5, 10', weight: 3}).addTo(mapInstance);
+
+      const pkgIcon = L.divIcon({
+        html: `<div class="package-icon" style="transform: rotate(${bearing}deg)">📦</div>`,
+        className: 'custom-div-icon',
+        iconSize: [40, 40],
+        iconAnchor: [20, 20]
+      });
+      let pkgMarker = L.marker([p.current_lat, p.current_lng], { icon: pkgIcon }).addTo(mapInstance);
+
+      const updatePos = async () => {
+        const elapsed = (new Date() - new Date(p.start_time)) / 1000;
+        const duration = 14400; 
+        let fraction = Math.min(elapsed / duration, 1);
         
-        if (!startTime) {
-            startTime = Date.now();
-            localStorage.setItem(storageKey, startTime);
+        const currLat = p.initial_lat + (p.dest_lat - p.initial_lat) * fraction;
+        const currLng = p.initial_lng + (p.dest_lng - p.initial_lng) * fraction;
+
+        pkgMarker.setLatLng([currLat, currLng]);
+        progressLine.setLatLngs([[p.initial_lat, p.initial_lng], [currLat, currLng]]);
+
+        if (fraction >= 1 || p.status === 'On Hold') clearInterval(trackingInterval);
+        
+        if (Math.random() > 0.8) {
+           await supabaseClient.from('parcels').update({ current_lat: currLat, current_lng: currLng }).eq('tracking_number', p.tracking_number);
         }
+      };
 
-        const duration = 4 * 60 * 60 * 1000; // 4 hours in ms
-        
-        const updatePosition = () => {
-            const now = Date.now();
-            const elapsed = now - parseInt(startTime);
-            let progress = Math.min(elapsed / duration, 1);
-
-            // Calculate current position
-            const currentLat = start[0] + (end[0] - start[0]) * progress;
-            const currentLng = start[1] + (end[1] - start[1]) * progress;
-            const newPos = [currentLat, currentLng];
-
-            // Calculate rotation angle
-            const angle = Math.atan2(end[0] - start[0], end[1] - start[1]) * (180 / Math.PI);
-            
-            // Update Marker and Progress Line
-            movingMarker.setLatLng(newPos);
-            progressLine.setLatLngs([start, newPos]);
-            
-            const markerDiv = movingMarker.getElement().querySelector('.package-marker-container');
-            if(markerDiv) markerDiv.style.transform = `rotate(${angle-90}deg)`;
-
-            // Check if 4 hours passed or reached destination
-            if (progress >= 1) {
-                clearInterval(animationInterval);
-                localStorage.setItem(`status_${parcel.tracking_number}`, 'On Hold');
-                location.reload(); // Refresh to show On Hold state
-            }
-        };
-
-        updatePosition();
-        animationInterval = setInterval(updatePosition, 7000); // Move every 7 seconds
+      if (p.status !== 'On Hold') {
+        trackingInterval = setInterval(updatePos, 7000);
+      }
+      updatePos();
+      mapInstance.fitBounds(plannedRoute.getBounds(), { padding: [50, 50] });
     }
 
     function hideResults() { document.getElementById('resultsSection').classList.add('hidden'); window.scrollTo(0,0); }
+    function closeErrorOverlay() { document.getElementById('errorOverlay').classList.add('hidden'); }
     function openPaymentModal() { document.getElementById('paymentModal').classList.remove('hidden'); }
     function closePaymentModal() { document.getElementById('paymentModal').classList.add('hidden'); }
     
