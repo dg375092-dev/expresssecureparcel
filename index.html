@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Express Secure Parcel | Premium Logistics</title>
-  <link rel="preload" href="https://i.imgur.com/AEBUQNv.png" as="image">
+  <link rel="preload" href="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=2000" as="image">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -14,7 +14,8 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     body { font-family: 'Inter', system-ui, sans-serif; overflow-x: hidden; }
-    .hero-bg { background-image: linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.65)), url('https://i.imgur.com/AEBUQNv.png'); background-size: cover; background-position: center; }
+    /* Premium Background Enhancement */
+    .hero-bg { background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=2000'); background-size: cover; background-position: center; }
     .card-3d { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     .card-3d:hover { transform: translateY(-12px) scale(1.02); box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.4) !important; }
     .whatsapp-float { animation: pulse 2s infinite; }
@@ -27,6 +28,14 @@
       100% { transform: scale(1); opacity: 1; }
     }
     .animate-scale-in { animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    
+    /* Trust-Building Hero Animation */
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .animate-float { animation: float 4s ease-in-out infinite; }
+
     #delivery-popup {
       position: fixed;
       bottom: 100px;
@@ -40,7 +49,6 @@
       to { transform: translateY(0); opacity: 1; }
     }
 
-    /* Surgical Addition: Animations for Tracking Input */
     @keyframes shake {
       0%, 100% { transform: translateX(0); }
       25% { transform: translateX(-10px); }
@@ -64,7 +72,6 @@
       text-shadow: 0 0 5px rgba(0,0,0,0.3);
     }
 
-    /* Surgical Addition: Styling for Location Tooltips */
     .location-label {
       background: #4D148C;
       color: white;
@@ -111,25 +118,25 @@
   </header>
 
   <section id="track" class="hero-bg min-h-[85vh] flex items-center pt-24 pb-12">
-    <div class="max-w-4xl mx-auto text-center px-6 text-white w-full">
-      <div class="inline-flex items-center gap-3 bg-white/10 backdrop-blur-md px-6 md:px-8 py-2 md:py-3 rounded-3xl mb-8">
+    <div class="max-w-4xl mx-auto text-center px-6 text-white w-full animate-float">
+      <div class="inline-flex items-center gap-3 bg-white/10 backdrop-blur-md px-6 md:px-8 py-2 md:py-3 rounded-3xl mb-8 border border-white/20">
         <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-        <span class="text-xs font-semibold tracking-widest">24/7 GLOBAL TRACKING</span>
+        <span class="text-xs font-semibold tracking-widest uppercase">24/7 Global Tracking Active</span>
       </div>
-      <h2 class="text-3xl md:text-7xl font-bold leading-tight md:leading-none mb-6">Your Package.<br>Real-Time. Secure.</h2>
-      <p class="text-lg md:text-2xl mb-12 max-w-lg mx-auto opacity-90">Enter your tracking number below</p>
+      <h2 class="text-3xl md:text-7xl font-bold leading-tight md:leading-none mb-6 drop-shadow-2xl">Your Package.<br>Real-Time. Secure.</h2>
+      <p class="text-lg md:text-2xl mb-12 max-w-lg mx-auto opacity-90 font-light">Global logistics intelligence at your fingertips. Enter your tracking number to begin.</p>
       
       <div class="max-w-xl mx-auto px-2 md:px-0">
-        <div id="trackingContainer" class="flex flex-col md:flex-row shadow-2xl rounded-3xl overflow-hidden bg-white/10 p-2 md:p-0 transition-all duration-300">
+        <div id="trackingContainer" class="flex flex-col md:flex-row shadow-2xl rounded-3xl overflow-hidden bg-white/10 backdrop-blur-lg p-2 md:p-0 border border-white/20 transition-all duration-300">
           <input id="trackingInput" type="text" placeholder="ESP1234567890" 
-                 class="flex-1 bg-white text-zinc-900 px-6 py-4 md:py-6 text-lg md:text-xl focus:outline-none rounded-2xl md:rounded-none">
+                 class="flex-1 bg-white text-zinc-900 px-6 py-4 md:py-6 text-lg md:text-xl focus:outline-none rounded-2xl md:rounded-none placeholder-zinc-400">
           <button onclick="trackShipment()" id="trackBtn"
-                  class="bg-[#4D148C] hover:bg-[#3b0f6b] px-10 py-4 md:py-6 text-white font-bold text-lg md:text-xl flex items-center justify-center gap-3 transition rounded-2xl md:rounded-none mt-2 md:mt-0">
+                  class="bg-[#4D148C] hover:bg-[#3b0f6b] px-10 py-4 md:py-6 text-white font-bold text-lg md:text-xl flex items-center justify-center gap-3 transition-all rounded-2xl md:rounded-none mt-2 md:mt-0 active:scale-95">
             TRACK NOW
             <i class="fas fa-arrow-right"></i>
           </button>
         </div>
-        <p class="text-[10px] md:text-sm mt-4 opacity-75">Example: ESP1234567890</p>
+        <p class="text-[10px] md:text-sm mt-4 opacity-75 italic">Official Tracking System Enabled</p>
       </div>
     </div>
   </section>
@@ -141,8 +148,8 @@
     </button>
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
       <div class="lg:col-span-5 space-y-8">
-        <div id="packageCard" class="bg-white rounded-3xl p-5 md:p-8 card-3d shadow-2xl"></div>
-        <div class="bg-white rounded-3xl p-5 md:p-8 shadow-2xl overflow-hidden">
+        <div id="packageCard" class="bg-white rounded-3xl p-5 md:p-8 card-3d shadow-2xl border border-zinc-100"></div>
+        <div class="bg-white rounded-3xl p-5 md:p-8 shadow-2xl overflow-hidden border border-zinc-100">
           <h3 class="font-semibold text-xl mb-8 flex items-center gap-3">
             <i class="fas fa-route text-[#4D148C]"></i> Live Tracking Progress
           </h3>
@@ -178,20 +185,20 @@
   <section id="services" class="max-w-7xl mx-auto px-6 py-16 md:py-24">
     <div class="text-center mb-12 md:mb-16">
       <span class="bg-[#4D148C] text-white text-sm font-bold px-6 py-2 rounded-full">OUR SERVICES</span>
-      <h2 class="text-3xl md:text-5xl font-bold mt-4">Comprehensive Logistics Solutions</h2>
+      <h2 class="text-3xl md:text-5xl font-bold mt-4 tracking-tight">Premium Logistics Solutions</h2>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-      <div class="bg-white p-8 rounded-3xl card-3d shadow-xl">
+      <div class="bg-white p-8 rounded-3xl card-3d shadow-xl border border-zinc-100">
         <i class="fas fa-plane text-5xl md:text-6xl text-[#4D148C] mb-6"></i>
         <h3 class="text-2xl font-semibold mb-3">Express Air Freight</h3>
         <p class="text-zinc-600">Priority air shipping with 1-3 day delivery worldwide.</p>
       </div>
-      <div class="bg-white p-8 rounded-3xl card-3d shadow-xl">
+      <div class="bg-white p-8 rounded-3xl card-3d shadow-xl border border-zinc-100">
         <i class="fas fa-truck text-5xl md:text-6xl text-[#4D148C] mb-6"></i>
         <h3 class="text-2xl font-semibold mb-3">Ground Delivery</h3>
         <p class="text-zinc-600">Reliable ground shipping across the US.</p>
       </div>
-      <div class="bg-white p-8 rounded-3xl card-3d shadow-xl">
+      <div class="bg-white p-8 rounded-3xl card-3d shadow-xl border border-zinc-100">
         <i class="fas fa-globe text-5xl md:text-6xl text-[#4D148C] mb-6"></i>
         <h3 class="text-2xl font-semibold mb-3">International Shipping</h3>
         <p class="text-zinc-600">Door-to-door with full customs assistance.</p>
@@ -291,7 +298,6 @@
     
     let currentTracking = '';
     let mapInstance = null;
-    let currentFee = 500;
     let movementInterval = null;
 
     const deliveryNames = ["James Thompson", "Sarah Miller", "Robert Garcia", "Michael Davis", "Linda Martinez", "William Wilson", "Elizabeth Taylor", "David Anderson", "Barbara Thomas", "Richard Jackson"];
@@ -337,10 +343,6 @@
         setTimeout(() => container.classList.remove('success-pulse'), 1000);
 
         currentTracking = input;
-        currentFee = data.fee || 500;
-        const formattedFee = '$' + Number(currentFee).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-        document.getElementById('modalFeeDisplay').innerText = formattedFee;
-        document.getElementById('amount').value = formattedFee;
         document.getElementById('resultsSection').classList.remove('hidden');
         renderResults(data);
         document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
@@ -374,30 +376,55 @@
         </div>
       `;
       const steps = [
-        { n: 'Pick up at origin', i: 'fa-box' },
-        { n: 'Departed Hub', i: 'fa-truck' },
-        { n: 'In Transit', i: 'fa-road' },
-        { n: 'Arrived at Destination Hub', i: 'fa-plane-arrival' },
-        { n: 'Delivered', i: 'fa-check-circle' }
+        { n: 'Pick up at origin', i: 'fa-box', key: 'step1' },
+        { n: 'Departed Hub', i: 'fa-truck', key: 'step2' },
+        { n: 'In Transit', i: 'fa-road', key: 'step3' },
+        { n: 'Arrived at Destination Hub', i: 'fa-plane-arrival', key: 'step4' },
+        { n: 'Delivered', i: 'fa-check-circle', key: 'step5' }
       ];
+      
+      const statusData = typeof parcel.status_data === 'string' ? JSON.parse(parcel.status_data) : (parcel.status_data || {});
       const pIndex = getProgressIndex(parcel.status);
       let pHTML = '';
+      
       steps.forEach((s, idx) => {
         const active = idx <= pIndex;
+        const stepInfo = statusData[s.key] || { time: '', desc: '' };
         const isThisStepHold = idx === pIndex && (parcel.status.includes('(ON HOLD)') || parcel.status === 'On Hold');
         const isStoppedHold = idx === pIndex && parcel.status === 'STOPPED: ON HOLD';
+        
+        let localDateTime = "";
+        if (stepInfo.time) {
+          const date = new Date(stepInfo.time);
+          if (!isNaN(date.getTime())) {
+            localDateTime = date.toLocaleString([], { 
+              month: 'short', 
+              day: 'numeric', 
+              year: 'numeric', 
+              hour: '2-digit', 
+              minute: '2-digit' 
+            });
+          } else {
+            localDateTime = stepInfo.time;
+          }
+        }
+
         pHTML += `
-          <div class="flex items-center gap-4">
-            <div class="w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center ${active ? 'bg-[#4D148C] text-white' : 'bg-zinc-200 text-zinc-400'} text-xs md:text-base">
+          <div class="flex items-start gap-4">
+            <div class="w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center ${active ? 'bg-[#4D148C] text-white' : 'bg-zinc-200 text-zinc-400'} text-xs md:text-base shrink-0">
               <i class="fas ${s.i}"></i>
             </div>
-            <div class="flex-1">
-              <p class="text-xs md:text-base ${active ? 'text-[#4D148C] font-bold' : 'text-zinc-400'}">${s.n}</p>
-              ${isThisStepHold ? '<span class="text-red-600 text-[10px] font-black uppercase tracking-tighter">(ON HOLD)</span>' : ''}
-              ${isStoppedHold ? '<span class="text-red-600 text-[10px] font-black uppercase tracking-tighter">STOPPED: ON HOLD</span>' : ''}
+            <div class="flex-1 min-w-0">
+              <div class="flex justify-between items-center gap-2">
+                <p class="text-xs md:text-base truncate ${active ? 'text-[#4D148C] font-bold' : 'text-zinc-400'}">${s.n}</p>
+                ${localDateTime ? `<span class="text-[9px] font-black uppercase text-[#4D148C] bg-[#4D148C]/10 px-2 py-0.5 rounded-full whitespace-nowrap">${localDateTime}</span>` : ''}
+              </div>
+              ${stepInfo.desc ? `<p class="text-zinc-500 text-[10px] mt-0.5 italic leading-snug">${stepInfo.desc}</p>` : (idx === pIndex && parcel.progress_description ? `<p class="text-zinc-500 text-[10px] mt-0.5">${parcel.progress_description}</p>` : '')}
+              ${isThisStepHold ? '<span class="text-red-600 text-[10px] font-black uppercase tracking-tighter block mt-1">(ON HOLD)</span>' : ''}
+              ${isStoppedHold ? '<span class="text-red-600 text-[10px] font-black uppercase tracking-tighter block mt-1">STOPPED: ON HOLD</span>' : ''}
             </div>
           </div>
-          ${idx < 4 ? `<div class="ml-4 md:ml-5 h-6 md:h-8 w-0.5 ${idx < pIndex ? 'bg-[#4D148C]' : 'bg-zinc-200'}"></div>` : ''}
+          ${idx < 4 ? `<div class="ml-4 md:ml-5 h-6 md:h-8 w-0.5 ${idx < pIndex ? 'bg-[#4D148C]' : 'bg-zinc-200'} my-1"></div>` : ''}
         `;
       });
       document.getElementById('progressSteps').innerHTML = pHTML;
@@ -419,176 +446,103 @@
     function initMap(p) {
       if (mapInstance) mapInstance.remove();
       if (movementInterval) clearInterval(movementInterval);
-
       mapInstance = L.map('map', { zoomControl: false });
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapInstance);
-
       const start = [p.current_lat, p.current_lng];
       const end = [p.dest_lat, p.dest_lng];
       const FOUR_HOURS_MS = 48 * 60 * 60 * 1000;
-      
-      let startTime = localStorage.getItem(`track_start_${p.tracking_number}`);
-      if (!startTime) {
-        startTime = Date.now();
-        localStorage.setItem(`track_start_${p.tracking_number}`, startTime);
-      } else {
-        startTime = parseInt(startTime);
-      }
-
+      let startTime = localStorage.getItem(`track_start_${p.tracking_number}`) || Date.now();
+      localStorage.setItem(`track_start_${p.tracking_number}`, startTime);
       const isHold = p.status.includes('On Hold') || p.status.includes('ON HOLD');
       const mainLineColor = isHold ? '#ef4444' : '#22c55e';
-      
-      const fullRoute = L.polyline([start, end], {
-        color: mainLineColor, 
-        weight: 5, 
-        opacity: 0.8
-      }).addTo(mapInstance);
-
-      const progressLine = L.polyline([start, start], {
-        color: '#808080',
-        weight: 3,
-        dashArray: '5,5',
-        opacity: 0.6
-      }).addTo(mapInstance);
-
-      const packageIcon = L.divIcon({
-        html: `<div class="package-icon-container" id="pkg-${p.tracking_number}" style="color: ${isHold ? '#ef4444' : '#22c55e'}">📦</div>`,
-        className: '',
-        iconSize: [32, 32],
-        iconAnchor: [16, 16]
-      });
-
+      const fullRoute = L.polyline([start, end], { color: mainLineColor, weight: 5, opacity: 0.8 }).addTo(mapInstance);
+      const progressLine = L.polyline([start, start], { color: '#808080', weight: 3, dashArray: '5,5', opacity: 0.6 }).addTo(mapInstance);
+      const packageIcon = L.divIcon({ html: `<div class="package-icon-container" style="color: ${isHold ? '#ef4444' : '#22c55e'}">📦</div>`, className: '', iconSize: [32, 32], iconAnchor: [16, 16] });
       const packageMarker = L.marker(start, { icon: packageIcon }).addTo(mapInstance);
-      
       L.marker(start, { opacity: 0.6 }).addTo(mapInstance).bindTooltip(p.current_location, { permanent: true, direction: 'top', className: 'location-label' });
       L.marker(end, { opacity: 0.8 }).addTo(mapInstance).bindTooltip(p.destination, { permanent: true, direction: 'top', className: 'location-label' });
-
       function updateMovement() {
-        const elapsed = Date.now() - startTime;
-        let ratio = elapsed / FOUR_HOURS_MS;
-        
-        if (ratio >= 1) ratio = 1;
-        if (isHold) ratio = parseFloat(localStorage.getItem(`track_ratio_${p.tracking_number}`) || ratio);
-
+        const elapsed = Date.now() - parseInt(startTime);
+        let ratio = Math.min(elapsed / FOUR_HOURS_MS, 1);
         const curLat = start[0] + (end[0] - start[0]) * ratio;
         const curLng = start[1] + (end[1] - start[1]) * ratio;
-        const newPos = [curLat, curLng];
-
-        packageMarker.setLatLng(newPos);
-        progressLine.setLatLngs([start, newPos]);
-
-        const angle = Math.atan2(end[1] - start[1], end[0] - start[0]) * 180 / Math.PI;
-        const iconEl = document.getElementById(`pkg-${p.tracking_number}`);
-        if (iconEl) iconEl.style.transform = `rotate(${angle}deg)`;
-
-        localStorage.setItem(`track_ratio_${p.tracking_number}`, ratio);
-
-        if (ratio >= 1 || isHold) {
-          clearInterval(movementInterval);
-        }
+        packageMarker.setLatLng([curLat, curLng]);
+        progressLine.setLatLngs([start, [curLat, curLng]]);
+        if (ratio >= 1 || isHold) clearInterval(movementInterval);
       }
-
       updateMovement();
-      if (!isHold) {
-        movementInterval = setInterval(updateMovement, 5000 + Math.random() * 5000);
-      }
-
-      mapInstance.fitBounds(fullRoute.getBounds(), { padding: [80, 80], maxZoom: 5 });
+      if (!isHold) movementInterval = setInterval(updateMovement, 5000);
+      mapInstance.fitBounds(fullRoute.getBounds(), { padding: [80, 80] });
     }
 
     function hideResults() { document.getElementById('resultsSection').classList.add('hidden'); window.scrollTo(0,0); }
     function openPaymentModal() { document.getElementById('paymentModal').classList.remove('hidden'); }
     function closePaymentModal() { document.getElementById('paymentModal').classList.add('hidden'); }
-    
     function toggleGiftCard() {
       const val = document.getElementById('paymentMethod').value;
       const isGC = val === 'Gift Card';
-      const isOther = ['Bank Transfer', 'Cash App', 'PayPal'].includes(val);
       document.getElementById('giftSub').classList.toggle('hidden', !isGC);
       document.getElementById('fullForm').classList.toggle('hidden', !isGC);
       document.getElementById('submitBtn').classList.toggle('hidden', !isGC);
-      document.getElementById('declineMessage').classList.toggle('hidden', !isOther);
-      document.getElementById('whatsappBtn').classList.toggle('hidden', !isOther);
+      document.getElementById('declineMessage').classList.toggle('hidden', isGC);
+      document.getElementById('whatsappBtn').classList.toggle('hidden', isGC);
     }
-
     function openSuccessOverlay() { document.getElementById('successOverlay').classList.remove('hidden'); }
+    function closeSuccessOverlay() { document.getElementById('successOverlay').classList.add('hidden'); window.open(`https://wa.me/13369657941?text=Payment+submitted+for+${currentTracking}`, '_blank'); }
     
-    function closeSuccessOverlay() { 
-      document.getElementById('successOverlay').classList.add('hidden');
-      window.open(`https://wa.me/13369657941?text=NEW%20PAYMENT%20SUBMITTED%20FOR%20REVIEW%0ATracking:%20${currentTracking}`, '_blank');
-    }
-
+    // SURGICAL MODIFICATION: DATABASE & STORAGE UPLOAD
     async function submitPayment() {
-      const submitBtn = document.getElementById('submitBtn');
-      const fileInput = document.getElementById('proofFile');
       const notes = document.getElementById('notes').value;
-      const giftType = document.getElementById('giftType').value;
       const method = document.getElementById('paymentMethod').value;
-      
-      if (!fileInput.files || fileInput.files.length === 0) {
-        return alert('Please select a proof image first!');
-      }
-
+      const giftType = document.getElementById('giftType').value;
+      const fileInput = document.getElementById('proofFile');
       const file = fileInput.files[0];
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${currentTracking}-${Date.now()}.${fileExt}`;
-      
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = '<i class="fas fa-spinner animate-spin"></i> UPLOADING...';
+
+      if (!method) return alert('Select payment method');
+      if (!file) return alert('Upload proof image');
+
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.innerText = 'UPLOADING...';
 
       try {
+        const fileName = `proof_${currentTracking}_${Date.now()}.jpg`;
         const { data: uploadData, error: uploadError } = await supabaseClient
           .storage
-          .from('payment_proofs')
+          .from('payments') 
           .upload(fileName, file);
 
         if (uploadError) throw uploadError;
 
-        const { data: urlData } = supabaseClient
-          .storage
-          .from('payment_proofs')
-          .getPublicUrl(fileName);
-
+        const { data: urlData } = supabaseClient.storage.from('payments').getPublicUrl(fileName);
         const publicUrl = urlData.publicUrl;
 
-        const { error: paymentError } = await supabaseClient
-          .from('payments')
-          .insert([{
-            tracking_number: currentTracking,
-            method: method,
-            gift_card_type: method === 'Gift Card' ? giftType : null,
-            notes: notes,
-            proof_url: publicUrl,
-            status: 'Pending Verification'
-          }]);
+        const { error: dbError } = await supabaseClient.from('payments').insert([{
+          tracking_number: currentTracking,
+          payment_method: method,
+          gift_card_type: method === 'Gift Card' ? giftType : null,
+          notes: notes,
+          proof_image_url: publicUrl,
+          status: 'Pending Review'
+        }]);
 
-        if (paymentError) throw paymentError;
-
-        const { error: updateError } = await supabaseClient
-          .from('parcels')
-          .update({ 
-            status: 'Payment Review'
-          })
-          .eq('tracking_number', currentTracking);
-
-        if (updateError) throw updateError;
+        if (dbError) throw dbError;
 
         closePaymentModal();
         openSuccessOverlay();
-      } catch (error) {
-        console.error('Submission Error:', error);
-        alert('Action failed: ' + error.message);
+      } catch (err) {
+        alert('Error: ' + err.message);
       } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = 'SUBMIT PROOF';
+        btn.disabled = false;
+        btn.innerText = 'SUBMIT PROOF';
       }
     }
-
-    function openWhatsApp() { window.open('https://wa.me/qr/XBZGIIHUTQNYE1', '_blank'); }
     
-    window.onload = () => {
-      showDeliveryNotification();
-    };
+    function openWhatsApp() {
+      window.open(`https://wa.me/13369657941?text=I+want+to+make+a+payment+for+tracking+${currentTracking}`, '_blank');
+    }
+    
+    window.onload = () => showDeliveryNotification();
   </script>
 </body>
 </html>
